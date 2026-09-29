@@ -4,6 +4,8 @@
 
 SNAKE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SNAKE_FILE="$SNAKE_DIR/snake.bend"
+PY_FILE="$SNAKE_DIR/snake.py"
+GAME_LANG="${GAME_LANG:-bend}"
 
 require_tmux() {
   command -v tmux >/dev/null 2>&1 || { echo "SKIP: tmux not installed"; exit 77; }
@@ -15,14 +17,19 @@ new_session_name() {
 
 # start_game SESSION [COLS] [ROWS]
 # Launches the real game in a detached tmux session (a real pty, so
-# stty/raw mode and /dev/tty behave exactly as in interactive use). The
-# wrapper prints GAME_EXIT_CODE:<n> once bend exits, then idles so the
-# pane survives long enough for the test to inspect it.
+# stty/raw mode and /dev/tty behave exactly as in interactive use). Which
+# implementation is launched is controlled by $GAME_LANG (bend, default,
+# or python) -- every other helper here just inspects rendered pane text,
+# so the same test files validate either one. The wrapper prints
+# GAME_EXIT_CODE:<n> once the game exits, then idles so the pane survives
+# long enough for the test to inspect it.
 start_game() {
   local session="$1" cols="${2:-100}" rows="${3:-40}"
+  local cmd="bend snake.bend"
+  [ "$GAME_LANG" = "python" ] && cmd="python3 snake.py"
   tmux kill-session -t "$session" 2>/dev/null
   tmux new-session -d -s "$session" -x "$cols" -y "$rows" \
-    "cd '$SNAKE_DIR' && bend snake.bend; echo GAME_EXIT_CODE:\$?; sleep 30"
+    "cd '$SNAKE_DIR' && $cmd; echo GAME_EXIT_CODE:\$?; sleep 30"
 }
 
 stop_game() {

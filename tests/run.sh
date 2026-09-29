@@ -1,12 +1,20 @@
 #!/usr/bin/env bash
-# Runs the snake.bend test suite: one bare compile check plus a series of
+# Runs the snake test suite: one bare compile check plus a series of
 # tmux-driven end-to-end tests that launch the real game in a real pty,
 # send it real keystrokes, and inspect the rendered terminal output.
+# The same gameplay tests validate either implementation -- only which
+# command they launch (via $GAME_LANG in lib.sh) changes.
 #
-# Usage: tests/run.sh [pattern]
+# Usage: tests/run.sh [--python] [pattern]
+#   --python  test snake.py instead of the default snake.bend
 #   pattern   optional glob to select a subset, e.g. tests/run.sh quit
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
+
+if [ "${1:-}" = "--python" ]; then
+  export GAME_LANG=python
+  shift
+fi
 
 pattern="${1:-}"
 pass=0

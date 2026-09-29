@@ -2,6 +2,7 @@
 # snake.bend type-checks and passes Bend's termination/proof checker.
 set -uo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+[ "$GAME_LANG" = "python" ] && { echo "SKIP: testing the Python implementation"; exit 77; }
 
 out=$(bend "$SNAKE_FILE" --check-only 2>&1)
 status=$?
