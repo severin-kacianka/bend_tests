@@ -26,9 +26,12 @@ style Snake game, built up alongside a few of Bend's formal proof
   to be functionally equivalent and validated by the exact same test
   suite (see below), with no laws/proofs (Python has no equivalent
   toolchain for that).
-- **`tests/`** — a tmux-driven black-box test suite: launches the game
-  in a real pty, sends real keystrokes, inspects the rendered terminal
-  output. The same test files exercise either implementation.
+- **`snake_buggy.py`** — the same deliberate bug as `snake_buggy.bend`,
+  ported to Python, with no proof to catch it there either.
+- **`tests/`** — a tmux-driven black-box test suite: launches a game
+  file in a real pty, sends real keystrokes, inspects the rendered
+  terminal output. `tests/run.sh --file PATH` points it at any `.bend`
+  or `.py` file, not just the two above.
 - **`AGENTS.md`** — repo conventions for working with Bend here (run
   `bend guide`, keep rules in `LAWS.bend`, gate commits on
   `bend PROOF.bend`).
@@ -71,10 +74,16 @@ mode while playing and restored on exit either way.
 ## Test
 
 ```sh
-tests/run.sh              # black-box suite against snake.bend
-tests/run.sh --python      # the same suite against snake.py
-tests/run.sh quit          # only run tests matching "quit"
+tests/run.sh                       # black-box suite against snake.bend
+tests/run.sh --file snake.py       # the same suite against snake.py
+tests/run.sh --file path/to.bend   # ...or any other .bend/.py file
+tests/run.sh quit                  # only run tests matching "quit"
 ```
+
+`--file` accepts any `.bend` or `.py` file, not just the two shipped
+here — the suite only ever talks to it through a real pty (keystrokes
+in, rendered text out), so it works against any implementation that
+speaks the same terminal protocol.
 
 ## The buggy-law demo
 

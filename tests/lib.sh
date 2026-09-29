@@ -3,9 +3,15 @@
 # Every test sources this, then uses a unique tmux session it owns.
 
 SNAKE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SNAKE_FILE="$SNAKE_DIR/snake.bend"
-PY_FILE="$SNAKE_DIR/snake.py"
-GAME_LANG="${GAME_LANG:-bend}"
+
+# GAME_FILE names whatever implementation is under test. Relative paths
+# resolve against the repo root; run.sh's --file flag passes an already-
+# resolved absolute path. Defaults to the reference Bend implementation.
+GAME_FILE="${GAME_FILE:-snake.bend}"
+case "$GAME_FILE" in
+  /*) ;;
+  *)  GAME_FILE="$SNAKE_DIR/$GAME_FILE" ;;
+esac
 
 require_tmux() {
   command -v tmux >/dev/null 2>&1 || { echo "SKIP: tmux not installed"; exit 77; }
@@ -16,17 +22,21 @@ new_session_name() {
 }
 
 # start_game SESSION [COLS] [ROWS]
-# Launches the real game in a detached tmux session (a real pty, so
-# stty/raw mode and /dev/tty behave exactly as in interactive use). Which
-# implementation is launched is controlled by $GAME_LANG (bend, default,
-# or python) -- every other helper here just inspects rendered pane text,
-# so the same test files validate either one. The wrapper prints
-# GAME_EXIT_CODE:<n> once the game exits, then idles so the pane survives
-# long enough for the test to inspect it.
+# Launches $GAME_FILE in a detached tmux session (a real pty, so
+# stty/raw mode and /dev/tty behave exactly as in interactive use). How
+# to run it is inferred from its extension -- every other helper here
+# just inspects rendered pane text, so the same test files validate any
+# implementation that speaks the same terminal protocol. The wrapper
+# prints GAME_EXIT_CODE:<n> once the game exits, then idles so the pane
+# survives long enough for the test to inspect it.
 start_game() {
   local session="$1" cols="${2:-100}" rows="${3:-40}"
-  local cmd="bend snake.bend"
-  [ "$GAME_LANG" = "python" ] && cmd="python3 snake.py"
+  local cmd
+  case "$GAME_FILE" in
+    *.bend) cmd="bend '$GAME_FILE'" ;;
+    *.py)   cmd="python3 '$GAME_FILE'" ;;
+    *)      fail "don't know how to run '$GAME_FILE' (expected a .bend or .py file)" ;;
+  esac
   tmux kill-session -t "$session" 2>/dev/null
   tmux new-session -d -s "$session" -x "$cols" -y "$rows" \
     "cd '$SNAKE_DIR' && $cmd; echo GAME_EXIT_CODE:\$?; sleep 30"
